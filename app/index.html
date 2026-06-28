@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>HTML + CSS Game</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="game-container">
+    <h1>Catch the Square!</h1>
+    <p>Click the moving square as fast as you can.</p>
+    <div id="square"></div>
+    <p id="score">Score: 0</p>
+  </div>
+
+  <script>
+    let score = 0;
+    const square = document.getElementById("square");
+    const scoreDisplay = document.getElementById("score");
+
+    function moveSquare() {
+      const x = Math.floor(Math.random() * 300);
+      const y = Math.floor(Math.random() * 300);
+      square.style.left = x + "px";
+      square.style.top = y + "px";
+    }
+
+    square.addEventListener("click", () => {
+      score++;
+      scoreDisplay.textContent = "Score: " + score;
+      moveSquare();
+    });
+
+    moveSquare();
+  </script>
+</body>
+</html>
