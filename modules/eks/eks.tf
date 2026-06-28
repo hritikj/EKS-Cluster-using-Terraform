@@ -8,7 +8,7 @@ module "eks" {
 
   eks_managed_node_groups = {
     default = {
-      instance_types = var.node_instance
+      instance_types = [var.node_instance]
       min_size       = var.min_size
       max_size       = var.max_size
       desired_size   = var.desired_size
