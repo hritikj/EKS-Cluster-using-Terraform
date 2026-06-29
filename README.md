@@ -6,113 +6,282 @@ This project follows Infrastructure as Code (IaC) principles by creating network
 
 ---
 
-## Overview
+## Project Structure
 
-This project automates the provisioning of AWS infrastructure using **Terraform**.
-
-Running a single command:
-
-```bash
-terraform apply
+```text
+.
+├── app
+│   ├── Dockerfile
+│   ├── index.html
+│   └── style.css
+├── k8s
+│   ├── deployment.yml
+│   └── service.yml
+├── modules
+│   ├── ecr
+│   │   ├── ecr.tf
+│   │   ├── output.tf
+│   │   └── variable.tf
+│   ├── eks
+│   │   ├── eks.tf
+│   │   ├── output.tf
+│   │   └── variable.tf
+│   └── vpc
+│       ├── output.tf
+│       └── vpc.tf
+├── backend.tf
+├── main.tf
+├── output.tf
+├── provider.tf
+├── trust-policy.json
+└── variable.tf
 ```
-
-creates the complete infrastructure, including:
-
-- Amazon VPC
-- Public & Private Subnets
-- Internet Gateway
-- Route Tables
-- Security Groups
-- Amazon ECR Repository
-- Amazon EKS Cluster
-- Managed Node Group
-- IAM Roles and Policies
-
-Once the infrastructure is provisioned, a Dockerized application can be pushed to Amazon ECR and deployed to the EKS cluster using Kubernetes manifests.
 
 ---
 
 ## Architecture
 
+The project provisions:
+
+- AWS VPC
+- Amazon EKS Cluster
+- Amazon ECR Repository
+- Kubernetes Deployment
+- Kubernetes Service
+
+Workflow:
+
 ```
 Terraform
      │
      ▼
-┌───────────────────────────────┐
-│          AWS Cloud            │
-│                               │
-│  ┌──────────────┐             │
-│  │     VPC      │             │
-│  └──────┬───────┘             │
-│         │                     │
-│  Public & Private Subnets     │
-│         │                     │
-│  ┌──────▼───────┐             │
-│  │     EKS      │             │
-│  └──────┬───────┘             │
-│         │                     │
-│ Kubernetes Worker Nodes       │
-│         │                     │
-│  ┌──────▼───────┐             │
-│  │ Docker Image │◄────────ECR │
-│  └──────────────┘             │
-└───────────────────────────────┘
-         │
-         ▼
- Kubernetes Deployment
-         │
-         ▼
-   LoadBalancer Service
-         │
-         ▼
-      End Users
+Provision AWS Infrastructure
+     │
+     ├── VPC
+     ├── EKS
+     └── ECR
+     │
+     ▼
+Build Docker Image
+     │
+     ▼
+Push Image to ECR
+     │
+     ▼
+Deploy Application to EKS
 ```
 
 ---
 
-## Key Features
+## Prerequisites
 
-- Infrastructure provisioned using **Terraform**
-- Modular Terraform architecture
-- Reusable VPC, ECR, and EKS modules
-- Managed Kubernetes cluster on AWS
-- Docker image storage with Amazon ECR
-- Kubernetes deployment using YAML manifests
-- Infrastructure managed with a single `terraform apply`
-- Easy resource cleanup using `terraform destroy`
+Make sure the following tools are installed:
+
+- Terraform >= 1.5
+- AWS CLI
+- kubectl
+- Docker
+- Git
+
+Configure AWS credentials:
+
+```bash
+aws configure
+```
 
 ---
 
-## Deployment
+## Terraform Modules
 
-Provision the infrastructure:
+### VPC Module
+
+Creates:
+
+- VPC
+- Public Subnets
+- Private Subnets
+- Internet Gateway
+- Route Tables
+
+---
+
+### EKS Module
+
+Creates:
+
+- Amazon EKS Cluster
+- Managed Node Group
+- IAM Roles
+
+---
+
+### ECR Module
+
+Creates:
+
+- Amazon Elastic Container Registry repository
+
+---
+
+## Deploy Infrastructure
+
+Initialize Terraform:
 
 ```bash
 terraform init
+```
 
+Validate:
+
+```bash
+terraform validate
+```
+
+Review the execution plan:
+
+```bash
 terraform plan
+```
 
+Create infrastructure:
+
+```bash
 terraform apply
 ```
 
-Configure Kubernetes:
+---
+
+## Build Docker Image
+
+Navigate to the application directory:
 
 ```bash
-aws eks update-kubeconfig --region <region> --name <cluster-name>
+cd app
 ```
 
-Deploy the application:
+Build the Docker image:
 
 ```bash
-kubectl apply -f k8s/
+docker build -t my-app .
 ```
 
-Destroy all resources:
+---
+
+## Push Image to Amazon ECR
+
+Authenticate Docker:
+
+```bash
+aws ecr get-login-password --region <region> \
+| docker login --username AWS --password-stdin <account-id>.dkr.ecr.<region>.amazonaws.com
+```
+
+Tag the image:
+
+```bash
+docker tag my-app:latest <account-id>.dkr.ecr.<region>.amazonaws.com/my-app:latest
+```
+
+Push:
+
+```bash
+docker push <account-id>.dkr.ecr.<region>.amazonaws.com/my-app:latest
+```
+
+---
+
+## Configure kubectl
+
+Update kubeconfig:
+
+```bash
+aws eks update-kubeconfig \
+--region <region> \
+--name <cluster-name>
+```
+
+Verify:
+
+```bash
+kubectl get nodes
+```
+
+---
+
+## Deploy Application
+
+Deploy:
+
+```bash
+kubectl apply -f k8s/deployment.yml
+kubectl apply -f k8s/service.yml
+```
+
+Verify:
+
+```bash
+kubectl get pods
+kubectl get svc
+```
+
+---
+
+## Destroy Infrastructure
+
+To remove all AWS resources:
 
 ```bash
 terraform destroy
 ```
 
+---
+
+## Variables
+
+Common variables include:
+
+| Variable | Description |
+|----------|-------------|
+| aws_region | AWS Region |
+| cluster_name | EKS Cluster Name |
+| vpc_cidr | VPC CIDR Block |
+| node_instance_type | EC2 Instance Type |
+| desired_capacity | Desired Worker Nodes |
+
+---
+
+## Outputs
+
+Terraform outputs may include:
+
+- EKS Cluster Name
+- Cluster Endpoint
+- ECR Repository URL
+- VPC ID
+- Subnet IDs
+
+---
+
+## Security
+
+- IAM Roles for EKS
+- Least-privilege access
+- Terraform state stored remotely (configured in `backend.tf`)
+- Trust policy defined in `trust-policy.json`
+
+---
+
+## Future Enhancements
+
+- Helm Charts
+- AWS Load Balancer Controller
+- Ingress Controller
+- HTTPS with ACM
+- GitHub Actions CI/CD
+- Monitoring using Prometheus and Grafana
+- Logging using CloudWatch
+
+---
 
 ## Author
 
