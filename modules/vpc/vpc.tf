@@ -1,13 +1,19 @@
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
-  version = "6.6.1"
+  version = "5.1.2"
 
   name            = "eks-vpc"
-  cidr            = "192.168.1.0/24"
+  cidr            = "10.0.0.0/16"
   azs             = ["us-east-1a", "us-east-1b"]
-  private_subnets = ["192.168.1.0/27", "192.168.1.32/27"]
-  public_subnets  = ["192.168.1.64/26", "192.168.1.128/26"]
-
-  enable_nat_gateway = false
+  private_subnets = ["10.0.1.0/24", "10.0.2.0/24"]
+  public_subnets  = ["10.0.101.0/24", "10.0.102.0/24"]
+  enable_dns_hostnames = true
+  enable_dns_support = true
+  enable_nat_gateway = true
   enable_vpn_gateway = true
+
+  tags = {
+    Project = "EKS"
+  }
+
 }
