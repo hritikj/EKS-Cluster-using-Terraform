@@ -15,3 +15,5 @@ spec:
         containers:
           - name:
             image: ${ecr_repo}:latest
+            ports:
+             - containerPort: 80
